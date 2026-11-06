@@ -15,7 +15,7 @@ dsh plugin --profile <profile> add https://github.com/iggypcnfsky/dsh-docs/relea
 From npm (once published):
 
 ```sh
-dsh plugin --profile <profile> add @iggypcnfsky/dsh-docs
+dsh plugin --profile <profile> add @iggylove/dsh-docs
 ```
 
 Restart `dsh web` after installing. The **Docs** panel appears in the sidebar.
@@ -52,7 +52,7 @@ Documents live under `DSH_PROFILE_DIR/data/dsh-docs` when the profile variable i
 
 ## Package
 
-- npm: `@iggypcnfsky/dsh-docs`
+- npm: `@iggylove/dsh-docs`
 - source: [iggypcnfsky/dsh-docs](https://github.com/iggypcnfsky/dsh-docs)
 - license: MIT
 
