@@ -1,0 +1,62 @@
+{
+  "name": "@iggypcnfsky/dsh-docs",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Google Docs\u2013style word processor for DeepSeek Harness: rich text, page setup, tables, images, print, export, and agent editing.",
+  "author": {
+    "name": "Iggy Love",
+    "email": "hey@iggy.love",
+    "url": "https://iggy.love"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/iggypcnfsky/dsh-docs#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iggypcnfsky/dsh-docs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/iggypcnfsky/dsh-docs/issues"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "word-processor",
+    "documents",
+    "rich-text",
+    "editor"
+  ],
+  "engines": {
+    "dsh": ">=0.2.2-0 <0.3.0-0",
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./icon.png": "./icon.png",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "icon.png",
+    "README.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true
+    }
+  }
+}
