@@ -6,6 +6,14 @@ A Google Docs–style word processor inside the DeepSeek Harness Web UI. The Doc
 
 Requirements: DeepSeek Harness `>=0.2.2-0 <0.3.0-0` and Node.js 20 or newer.
 
+From the GitHub release (available now):
+
+```sh
+dsh plugin --profile <profile> add https://github.com/iggypcnfsky/dsh-docs/releases/download/v1.0.0/iggypcnfsky-dsh-docs-1.0.0.tgz
+```
+
+From npm (once published):
+
 ```sh
 dsh plugin --profile <profile> add @iggypcnfsky/dsh-docs
 ```
