@@ -1186,7 +1186,7 @@ function makeTools(store) {
   const createTool = {
     name: 'docs_create',
     description:
-      'Create a document in the Harness Docs panel. Content defaults to Markdown; pass format "html" for exact styling (headings, bold, tables, colors, alignment are supported). The new document appears in the Docs panel document list.',
+      'Create a document in the Harness Docs panel. Content defaults to Markdown; pass format "html" for exact styling (headings, bold, tables, colors, alignment are supported). Pass folder to file it in an existing folder. The new document appears in the Docs panel document list.',
     parameters: {
       type: 'object',
       properties: {
@@ -1252,7 +1252,7 @@ function makeTools(store) {
   const updateTool = {
     name: 'docs_update',
     description:
-      'Edit a document in the Harness Docs panel. Use mode replace for a full rewrite, append to add content at the end, or prepend to add content at the start. Content defaults to Markdown; pass format "html" for exact formatting. You can also update the title, page setup, header, and footer.',
+      'Edit a document in the Harness Docs panel. Use mode replace for a full rewrite, append to add content at the end, or prepend to add content at the start. Content defaults to Markdown; pass format "html" for exact formatting. You can also update the title, folder, page setup, header, and footer.',
     parameters: {
       type: 'object',
       properties: {
