@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Dokumenty",
-    "description": "Pełny edytor tekstu w Harness: formatowanie, strony, tabele, obrazy, druk, eksport i edycja przez agenta."
+    "description": "Pełny edytor tekstu w Harness z folderami, formatowaniem, stronami, tabelami, obrazami, drukiem, eksportem i edycją przez agenta."
   },
   "title": "Dokumenty",
   "subtitle": "Pisz i formatuj razem.",
@@ -82,6 +82,24 @@
   "showOutline": "Pokaż konspekt",
   "documentList": "Lista dokumentów",
   "showDocumentList": "Pokaż listę dokumentów",
+  "folders": "Foldery",
+  "newFolder": "Nowy folder",
+  "newSubfolder": "Nowy podfolder",
+  "folderName": "Nazwa folderu",
+  "renameFolder": "Zmień nazwę folderu",
+  "deleteFolder": "Usuń folder",
+  "deleteFolderConfirm": "Usunąć ten folder?",
+  "deleteFolderBody": "Dokumenty z tego folderu i podfolderów zostaną przeniesione do „Bez folderu”. Nie zostaną usunięte.",
+  "unfiled": "Bez folderu",
+  "folderEmpty": "Brak dokumentów w tym folderze.",
+  "moveToFolder": "Przenieś do folderu",
+  "folderCreated": "Utworzono folder.",
+  "folderRenamed": "Zmieniono nazwę folderu.",
+  "folderDeleted": "Usunięto folder. Dokumenty przeniesiono do „Bez folderu”.",
+  "documentMoved": "Przeniesiono dokument.",
+  "noFolders": "Nie ma jeszcze folderów",
+  "expand": "Rozwiń",
+  "collapse": "Zwiń",
   "zoom": "Powiększenie",
   "zoomIn": "Powiększ",
   "zoomOut": "Pomniejsz",

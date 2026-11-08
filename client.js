@@ -94,6 +94,24 @@ window.__ModuleLoader__.load({
       showOutline: 'Show outline',
       documentList: 'Document list',
       showDocumentList: 'Show document list',
+      folders: 'Folders',
+      newFolder: 'New folder',
+      newSubfolder: 'New subfolder',
+      folderName: 'Folder name',
+      renameFolder: 'Rename folder',
+      deleteFolder: 'Delete folder',
+      deleteFolderConfirm: 'Delete this folder?',
+      deleteFolderBody: 'Documents in this folder and its subfolders move to Unfiled. They are not deleted.',
+      unfiled: 'Unfiled',
+      folderEmpty: 'No documents in this folder.',
+      moveToFolder: 'Move to folder',
+      folderCreated: 'Folder created.',
+      folderRenamed: 'Folder renamed.',
+      folderDeleted: 'Folder deleted. Its documents were moved to Unfiled.',
+      documentMoved: 'Document moved.',
+      noFolders: 'No folders yet',
+      expand: 'Expand',
+      collapse: 'Collapse',
       zoom: 'Zoom',
       zoomIn: 'Zoom in',
       zoomOut: 'Zoom out',
@@ -301,6 +319,24 @@ window.__ModuleLoader__.load({
       showOutline: 'Pokaż konspekt',
       documentList: 'Lista dokumentów',
       showDocumentList: 'Pokaż listę dokumentów',
+      folders: 'Foldery',
+      newFolder: 'Nowy folder',
+      newSubfolder: 'Nowy podfolder',
+      folderName: 'Nazwa folderu',
+      renameFolder: 'Zmień nazwę folderu',
+      deleteFolder: 'Usuń folder',
+      deleteFolderConfirm: 'Usunąć ten folder?',
+      deleteFolderBody: 'Dokumenty z tego folderu i podfolderów zostaną przeniesione do „Bez folderu”. Nie zostaną usunięte.',
+      unfiled: 'Bez folderu',
+      folderEmpty: 'Brak dokumentów w tym folderze.',
+      moveToFolder: 'Przenieś do folderu',
+      folderCreated: 'Utworzono folder.',
+      folderRenamed: 'Zmieniono nazwę folderu.',
+      folderDeleted: 'Usunięto folder. Dokumenty przeniesiono do „Bez folderu”.',
+      documentMoved: 'Przeniesiono dokument.',
+      noFolders: 'Nie ma jeszcze folderów',
+      expand: 'Rozwiń',
+      collapse: 'Zwiń',
       zoom: 'Powiększenie',
       zoomIn: 'Powiększ',
       zoomOut: 'Pomniejsz',
@@ -903,6 +939,9 @@ window.__ModuleLoader__.load({
 
     const ICON_PATHS = {
       document: ['M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z', 'M14 2v5h5', 'M9 13h6', 'M9 17h6'],
+      folder: ['M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'],
+      folderPlus: ['M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', 'M12 11v6', 'M9 14h6'],
+      edit: ['M12 20h9', 'M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z'],
       plus: ['M12 5v14', 'M5 12h14'],
       search: ['M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z', 'M21 21l-4.35-4.35'],
       chevronDown: ['m6 9 6 6 6-6'],
@@ -1377,6 +1416,39 @@ window.__ModuleLoader__.load({
       .dd-doc-row:hover .dd-doc-row-actions, .dd-doc-row:focus-within .dd-doc-row-actions { display: flex; }
       .dd-doc-row-actions .dd-icon-btn { width: 22px; height: 22px; }
       .dd-rail-foot { flex: none; padding: 8px 12px 11px; border-top: 1px solid var(--dsw-alias-border-l1); color: var(--dsw-alias-label-secondary); font-size: 10.5px; display: flex; align-items: center; gap: 5px; }
+      .dd-folders { flex: none; max-height: 38%; min-height: 0; display: flex; flex-direction: column; padding: 0 8px 7px; border-bottom: 1px solid var(--dsw-alias-border-l1); }
+      .dd-folders-head { flex: none; display: flex; align-items: center; gap: 6px; padding: 1px 4px 4px; }
+      .dd-folders-title { flex: 1; font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--dsw-alias-label-secondary); }
+      .dd-folder-new { width: 24px; height: 24px; }
+      .dd-folder-tree { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 1px; }
+      .dd-folder-row { position: relative; appearance: none; display: flex; align-items: center; gap: 5px; width: 100%; min-height: 27px; padding: 4px 5px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; text-align: left; cursor: pointer; }
+      .dd-folder-row:hover { background: color-mix(in srgb, var(--dsw-alias-label-primary) 5%, transparent); color: var(--dsw-alias-label-primary); }
+      .dd-folder-row-active { background: color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent); border-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 16%, transparent); color: var(--dsw-alias-label-primary); }
+      .dd-folder-row-drop { background: color-mix(in srgb, var(--dsw-alias-brand-primary) 16%, transparent); border-color: var(--dsw-alias-brand-primary); }
+      .dd-folder-caret { appearance: none; flex: none; width: 14px; height: 18px; padding: 0; border: 0; background: transparent; color: var(--dsw-alias-label-secondary); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+      .dd-folder-caret-spacer { width: 14px; flex: none; }
+      .dd-folder-icon { flex: none; color: #d5a13b; }
+      .dd-folder-row-active .dd-folder-icon { color: var(--dsw-alias-brand-primary); }
+      .dd-folder-name { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; }
+      .dd-folder-count { flex: none; min-width: 14px; color: var(--dsw-alias-label-secondary); font-size: 9.5px; text-align: right; }
+      .dd-folder-menu-button { appearance: none; flex: none; width: 19px; height: 19px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--dsw-alias-label-secondary); display: none; align-items: center; justify-content: center; cursor: pointer; }
+      .dd-folder-row:hover .dd-folder-menu-button, .dd-folder-row:focus-within .dd-folder-menu-button, .dd-folder-menu-button[aria-expanded="true"] { display: inline-flex; }
+      .dd-folder-menu-button:hover { background: color-mix(in srgb, var(--dsw-alias-label-primary) 9%, transparent); color: var(--dsw-alias-label-primary); }
+      .dd-folder-menu { position: absolute; z-index: 80; right: 3px; top: 25px; min-width: 160px; padding: 4px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 8px; background: var(--dsw-alias-bg-overlay); box-shadow: 0 10px 28px rgba(0,0,0,.22); }
+      .dd-folder-menu button { appearance: none; display: flex; align-items: center; gap: 7px; width: 100%; padding: 6px 8px; border: 0; border-radius: 5px; background: transparent; color: var(--dsw-alias-label-primary); font: inherit; font-size: 11.5px; text-align: left; cursor: pointer; }
+      .dd-folder-menu button:hover { background: color-mix(in srgb, var(--dsw-alias-label-primary) 7%, transparent); }
+      .dd-folder-menu .dd-menu-danger { color: var(--dsw-alias-label-danger, #d93025); }
+      .dd-folder-empty { padding: 5px 7px 7px; color: var(--dsw-alias-label-secondary); font-size: 10.5px; }
+      .dd-list-caption { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 13px 3px; color: var(--dsw-alias-label-secondary); font-size: 10px; font-weight: 600; letter-spacing: .045em; text-transform: uppercase; }
+      .dd-list-caption span:last-child { font-weight: 500; letter-spacing: 0; text-transform: none; }
+      .dd-doc-row[draggable="true"] { cursor: grab; }
+      .dd-doc-row[draggable="true"]:active { cursor: grabbing; }
+      .dd-move-list { display: flex; flex-direction: column; gap: 2px; max-height: 330px; overflow: auto; }
+      .dd-move-row { appearance: none; display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 8px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--dsw-alias-label-primary); font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
+      .dd-move-row:hover { background: color-mix(in srgb, var(--dsw-alias-label-primary) 6%, transparent); }
+      .dd-move-row-active { background: color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent); border-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 18%, transparent); }
+      .dd-move-row svg { flex: none; color: #d5a13b; }
+      .dd-move-row span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .dd-main { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; position: relative; }
       .dd-ruler-bar { flex: none; display: flex; align-items: flex-end; justify-content: center; min-height: 28px; padding: 3px 16px 0; background: var(--dsw-alias-bg-base); border-bottom: 1px solid var(--dsw-alias-border-l1); overflow: hidden; }
       .dd-ruler { position: relative; height: 25px; flex: none; color: var(--dsw-alias-label-secondary); }
@@ -1627,6 +1699,101 @@ window.__ModuleLoader__.load({
       )
     }
 
+    function FolderNameDialog({ t, mode, initialName, onApply, onClose }) {
+      const [name, setName] = useState(initialName ?? '')
+      const trimmed = name.trim()
+      const submit = () => {
+        if (trimmed === '') return
+        onApply(trimmed)
+      }
+      const footer = [
+        h('button', { key: 'cancel', type: 'button', className: 'dd-btn', onClick: onClose }, t('cancel')),
+        h(
+          'button',
+          { key: 'save', type: 'button', className: 'dd-btn dd-btn-primary', disabled: trimmed === '', onClick: submit },
+          mode === 'rename' ? t('rename') : t('save'),
+        ),
+      ]
+      return h(
+        Modal,
+        {
+          title: mode === 'rename' ? t('renameFolder') : t('newFolder'),
+          onClose,
+          width: 360,
+          footer,
+        },
+        h(
+          Field,
+          { label: t('folderName') },
+          h('input', {
+            value: name,
+            maxLength: 80,
+            autoComplete: 'off',
+            placeholder: t('folderName'),
+            onChange: (event) => setName(event.target.value),
+            onKeyDown: (event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault()
+                submit()
+              }
+            },
+          }),
+        ),
+      )
+    }
+
+    function MoveToFolderDialog({ t, folders, doc, onMove, onClose }) {
+      const byId = new Map(folders.map((folder) => [folder.id, folder]))
+      const pathFor = (folder) => {
+        const parts = []
+        let cursor = folder
+        const seen = new Set()
+        while (cursor && !seen.has(cursor.id)) {
+          seen.add(cursor.id)
+          parts.unshift(cursor.name)
+          cursor = cursor.parentId ? byId.get(cursor.parentId) : null
+        }
+        return parts.join(' / ')
+      }
+      const ordered = folders
+        .slice()
+        .sort((a, b) => pathFor(a).localeCompare(pathFor(b)))
+      const footer = [
+        h('button', { key: 'cancel', type: 'button', className: 'dd-btn', onClick: onClose }, t('cancel')),
+      ]
+      return h(
+        Modal,
+        { title: t('moveToFolder'), subtitle: doc?.title ?? '', onClose, width: 400, footer },
+        h(
+          'div',
+          { className: 'dd-move-list' },
+          h(
+            'button',
+            {
+              type: 'button',
+              className: `dd-move-row${!doc?.folderId ? ' dd-move-row-active' : ''}`,
+              onClick: () => onMove(null),
+            },
+            h(Icon, { name: 'folder', size: 15 }),
+            h('span', null, t('unfiled')),
+          ),
+          ordered.map((folder) =>
+            h(
+              'button',
+              {
+                key: folder.id,
+                type: 'button',
+                className: `dd-move-row${doc?.folderId === folder.id ? ' dd-move-row-active' : ''}`,
+                onClick: () => onMove(folder.id),
+              },
+              h(Icon, { name: 'folder', size: 15 }),
+              h('span', null, pathFor(folder)),
+            ),
+          ),
+        ),
+      )
+    }
+
     function InsertTableDialog({ t, onInsert, onClose }) {
       const [rows, setRows] = useState(3)
       const [cols, setCols] = useState(3)
@@ -1842,6 +2009,11 @@ window.__ModuleLoader__.load({
 
     function DocsApp({ t, locale }) {
       const [documents, setDocuments] = useState([])
+      const [folders, setFolders] = useState([])
+      const [folderFilter, setFolderFilter] = useState('all')
+      const [collapsedFolders, setCollapsedFolders] = useState(() => new Set())
+      const [folderMenu, setFolderMenu] = useState(null)
+      const [folderDropTarget, setFolderDropTarget] = useState(null)
       const [active, setActive] = useState(null)
       const [title, setTitle] = useState('')
       const [page, setPage] = useState({
@@ -1932,6 +2104,8 @@ window.__ModuleLoader__.load({
       const filteredDocuments = useMemo(() => {
         const needle = query.trim().toLowerCase()
         let next = documents.slice()
+        if (folderFilter === 'unfiled') next = next.filter((doc) => !doc.folderId)
+        else if (folderFilter !== 'all') next = next.filter((doc) => doc.folderId === folderFilter)
         if (docFilter === 'starred') next = next.filter((doc) => doc.favorite)
         if (needle !== '') {
           next = next.filter((doc) => `${doc.title} ${doc.preview ?? ''}`.toLowerCase().includes(needle))
@@ -1941,7 +2115,14 @@ window.__ModuleLoader__.load({
           return String(b.updatedAt).localeCompare(String(a.updatedAt))
         })
         return next
-      }, [documents, query, docFilter, sort])
+      }, [documents, folders, query, docFilter, folderFilter, sort])
+
+      const selectedFolder = folderFilter !== 'all' && folderFilter !== 'unfiled'
+        ? folders.find((folder) => folder.id === folderFilter) ?? null
+        : null
+      const libraryLabel = selectedFolder?.name ?? (folderFilter === 'unfiled'
+        ? t('unfiled')
+        : docFilter === 'starred' ? t('starred') : t('allDocuments'))
 
       const saveLabel = saveState === 'saving'
         ? t('saving')
@@ -1968,6 +2149,296 @@ window.__ModuleLoader__.load({
           next.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
           return next
         })
+      }
+
+      function setFolderList(next) {
+        if (Array.isArray(next)) setFolders(next)
+      }
+
+      function folderChildren(parentId) {
+        return folders
+          .filter((folder) => (folder.parentId ?? null) === (parentId ?? null))
+          .sort((a, b) => {
+            const order = Number(a.order ?? 0) - Number(b.order ?? 0)
+            return order !== 0 ? order : String(a.name).localeCompare(String(b.name))
+          })
+      }
+
+      function folderDocumentCount(folderId) {
+        return documents.filter((doc) => doc.folderId === folderId).length
+      }
+
+      function folderDescendantIds(folderId) {
+        const found = new Set()
+        const queue = [folderId]
+        while (queue.length > 0) {
+          const current = queue.shift()
+          for (const folder of folders) {
+            if (folder.parentId === current && !found.has(folder.id)) {
+              found.add(folder.id)
+              queue.push(folder.id)
+            }
+          }
+        }
+        return found
+      }
+
+      function toggleFolder(folderId) {
+        setCollapsedFolders((previous) => {
+          const next = new Set(previous)
+          if (next.has(folderId)) next.delete(folderId)
+          else next.add(folderId)
+          return next
+        })
+      }
+
+      function chooseLibrary(nextFilter, nextDocFilter = 'all') {
+        setFolderFilter(nextFilter)
+        setDocFilter(nextDocFilter)
+        setFolderMenu(null)
+      }
+
+      function openCreateFolder(parentId = null) {
+        setFolderMenu(null)
+        setDialog({ kind: 'folderName', mode: 'create', parentId, name: '' })
+      }
+
+      function openRenameFolder(folder) {
+        setFolderMenu(null)
+        setDialog({ kind: 'folderName', mode: 'rename', id: folder.id, parentId: folder.parentId ?? null, name: folder.name })
+      }
+
+      function openDeleteFolder(folder) {
+        setFolderMenu(null)
+        setDialog({ kind: 'folderDelete', folder })
+      }
+
+      async function createFolder(name, parentId) {
+        try {
+          const data = await api('/folder/create', {
+            method: 'POST',
+            body: JSON.stringify({ name, parentId }),
+          })
+          setFolderList(data.folders)
+          if (parentId) {
+            setCollapsedFolders((previous) => {
+              const next = new Set(previous)
+              next.delete(parentId)
+              return next
+            })
+          }
+          setDialog(null)
+          notify('success', t('folderCreated'))
+          return data.folder
+        } catch (error) {
+          notify('error', error?.message ?? t('saveFailed'))
+          return null
+        }
+      }
+
+      async function renameFolder(id, name) {
+        try {
+          const data = await api('/folder/rename', {
+            method: 'POST',
+            body: JSON.stringify({ id, name }),
+          })
+          setFolderList(data.folders)
+          setDialog(null)
+          notify('success', t('folderRenamed'))
+        } catch (error) {
+          notify('error', error?.message ?? t('saveFailed'))
+        }
+      }
+
+      async function deleteFolder(folder) {
+        const removed = new Set([folder.id, ...folderDescendantIds(folder.id)])
+        try {
+          const data = await api('/folder/delete', {
+            method: 'POST',
+            body: JSON.stringify({ id: folder.id }),
+          })
+          setFolderList(data.folders)
+          if (Array.isArray(data.documents)) setDocuments(data.documents)
+          if (removed.has(folderFilter)) setFolderFilter('all')
+          if (activeRef.current?.folderId && removed.has(activeRef.current.folderId)) {
+            setActive((previous) => previous ? { ...previous, folderId: null } : previous)
+            activeRef.current = { ...activeRef.current, folderId: null }
+          }
+          setDialog(null)
+          notify('success', t('folderDeleted'))
+        } catch (error) {
+          notify('error', error?.message ?? t('saveFailed'))
+        }
+      }
+
+      async function moveDocument(doc, folderId) {
+        if (!doc) return
+        if ((doc.folderId ?? null) === (folderId ?? null)) {
+          setDialog(null)
+          return
+        }
+        try {
+          const data = await api('/save', {
+            method: 'POST',
+            body: JSON.stringify({ id: doc.id, document: { folderId } }),
+          })
+          mergeSummary(data.summary)
+          setFolderList(data.folders)
+          if (activeRef.current?.id === doc.id) {
+            setActive((previous) => previous ? { ...previous, folderId: folderId ?? null } : previous)
+            activeRef.current = { ...activeRef.current, folderId: folderId ?? null }
+          }
+          setFolderDropTarget(null)
+          setDialog(null)
+          notify('success', t('documentMoved'))
+        } catch (error) {
+          notify('error', error?.message ?? t('saveFailed'))
+        }
+      }
+
+      function startDocumentDrag(event, doc) {
+        event.dataTransfer.effectAllowed = 'move'
+        event.dataTransfer.setData('text/plain', doc.id)
+        event.dataTransfer.setData('application/x-dsh-doc', doc.id)
+      }
+
+      function dropDocumentOnFolder(event, folderId) {
+        event.preventDefault()
+        event.stopPropagation()
+        const id = event.dataTransfer.getData('application/x-dsh-doc') || event.dataTransfer.getData('text/plain')
+        const doc = documents.find((entry) => entry.id === id)
+        setFolderDropTarget(null)
+        if (doc) void moveDocument(doc, folderId)
+      }
+
+      function isFolderDropTarget(event, targetId) {
+        event.preventDefault()
+        event.stopPropagation()
+        if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+        if (folderDropTarget !== targetId) setFolderDropTarget(targetId)
+      }
+
+      function leaveFolderDrop(event, targetId) {
+        const related = event.relatedTarget
+        if (related instanceof Node && event.currentTarget.contains(related)) return
+        if (folderDropTarget === targetId) setFolderDropTarget(null)
+      }
+
+      function renderFolderNodes(parentId = null, depth = 0) {
+        const nodes = []
+        for (const folder of folderChildren(parentId)) {
+          const children = folderChildren(folder.id)
+          const collapsed = collapsedFolders.has(folder.id)
+          const activeFolder = folderFilter === folder.id
+          const dropTarget = folderDropTarget === folder.id
+          nodes.push(
+            h(
+              'div',
+              {
+                key: folder.id,
+                className: `dd-folder-row${activeFolder ? ' dd-folder-row-active' : ''}${dropTarget ? ' dd-folder-row-drop' : ''}`,
+                style: { paddingLeft: `${5 + depth * 14}px` },
+                role: 'button',
+                tabIndex: 0,
+                'aria-current': activeFolder ? 'true' : undefined,
+                'aria-expanded': children.length > 0 ? String(!collapsed) : undefined,
+                onClick: () => chooseLibrary(folder.id),
+                onKeyDown: (event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    chooseLibrary(folder.id)
+                  }
+                },
+                onDragOver: (event) => isFolderDropTarget(event, folder.id),
+                onDragLeave: (event) => leaveFolderDrop(event, folder.id),
+                onDrop: (event) => dropDocumentOnFolder(event, folder.id),
+              },
+              children.length > 0
+                ? h(
+                    'button',
+                    {
+                      type: 'button',
+                      className: 'dd-folder-caret',
+                      title: collapsed ? t('expand') : t('collapse'),
+                      'aria-label': collapsed ? t('expand') : t('collapse'),
+                      onClick: (event) => {
+                        event.stopPropagation()
+                        toggleFolder(folder.id)
+                      },
+                    },
+                    h(Icon, { name: collapsed ? 'chevronRight' : 'chevronDown', size: 12 }),
+                  )
+                : h('span', { className: 'dd-folder-caret-spacer' }),
+              h(Icon, { name: 'folder', size: 13, className: 'dd-folder-icon' }),
+              h('span', { className: 'dd-folder-name' }, folder.name),
+              h('span', { className: 'dd-folder-count' }, String(folderDocumentCount(folder.id) || '')),
+              h(
+                'button',
+                {
+                  type: 'button',
+                  className: 'dd-folder-menu-button',
+                  title: t('more'),
+                  'aria-label': t('more'),
+                  'aria-expanded': folderMenu === folder.id ? 'true' : 'false',
+                  'data-folder-menu-button': 'true',
+                  onClick: (event) => {
+                    event.stopPropagation()
+                    setFolderMenu((current) => current === folder.id ? null : folder.id)
+                  },
+                },
+                h(Icon, { name: 'more', size: 13 }),
+              ),
+              folderMenu === folder.id
+                ? h(
+                    'div',
+                    { className: 'dd-folder-menu', 'data-folder-menu': 'true', role: 'menu' },
+                    h(
+                      'button',
+                      {
+                        type: 'button',
+                        role: 'menuitem',
+                        onClick: (event) => {
+                          event.stopPropagation()
+                          openCreateFolder(folder.id)
+                        },
+                      },
+                      h(Icon, { name: 'folderPlus', size: 13 }),
+                      t('newSubfolder'),
+                    ),
+                    h(
+                      'button',
+                      {
+                        type: 'button',
+                        role: 'menuitem',
+                        onClick: (event) => {
+                          event.stopPropagation()
+                          openRenameFolder(folder)
+                        },
+                      },
+                      h(Icon, { name: 'edit', size: 13 }),
+                      t('renameFolder'),
+                    ),
+                    h(
+                      'button',
+                      {
+                        type: 'button',
+                        role: 'menuitem',
+                        className: 'dd-menu-danger',
+                        onClick: (event) => {
+                          event.stopPropagation()
+                          openDeleteFolder(folder)
+                        },
+                      },
+                      h(Icon, { name: 'trash', size: 13 }),
+                      t('deleteFolder'),
+                    ),
+                  )
+                : null,
+            ),
+          )
+          if (!collapsed) nodes.push(...renderFolderNodes(folder.id, depth + 1))
+        }
+        return nodes
       }
 
       function updatePage(next) {
@@ -2555,6 +3026,7 @@ window.__ModuleLoader__.load({
               rev: saved.rev,
             }
             mergeSummary(data.summary)
+            setFolderList(data.folders)
             setLastSaved(saved.updatedAt)
             setSaveState('saved')
           } catch (error) {
@@ -2659,6 +3131,7 @@ window.__ModuleLoader__.load({
             method: 'POST',
             body: JSON.stringify({
               title: t('untitled'),
+              folderId: selectedFolder?.id ?? null,
               html: '<p><br></p>',
               page: {
                 paper: 'a4',
@@ -2669,6 +3142,7 @@ window.__ModuleLoader__.load({
             }),
           })
           mergeSummary(data.summary)
+          setFolderList(data.folders)
           await openDocument(data.document.id, { force: true, skipFlush: true })
           notify('success', t('created'))
         } catch (error) {
@@ -2681,6 +3155,7 @@ window.__ModuleLoader__.load({
           await flushSave()
           const data = await api('/duplicate', { method: 'POST', body: JSON.stringify({ id: doc.id }) })
           mergeSummary(data.summary)
+          setFolderList(data.folders)
           await openDocument(data.document.id, { force: true, skipFlush: true })
           notify('success', t('duplicated'))
         } catch (error) {
@@ -2690,9 +3165,12 @@ window.__ModuleLoader__.load({
 
       async function deleteDocument(doc) {
         try {
-          await api('/delete', { method: 'POST', body: JSON.stringify({ id: doc.id }) })
-          const remaining = documents.filter((entry) => entry.id !== doc.id)
+          const data = await api('/delete', { method: 'POST', body: JSON.stringify({ id: doc.id }) })
+          const remaining = Array.isArray(data.documents)
+            ? data.documents
+            : documents.filter((entry) => entry.id !== doc.id)
           setDocuments(remaining)
+          setFolderList(data.folders)
           setDialog(null)
           if (activeRef.current?.id === doc.id) {
             if (remaining[0]) await openDocument(remaining[0].id, { force: true, skipFlush: true })
@@ -2716,6 +3194,7 @@ window.__ModuleLoader__.load({
             body: JSON.stringify({ id: doc.id, document: { favorite: !doc.favorite } }),
           })
           mergeSummary(data.summary)
+          setFolderList(data.folders)
           if (activeRef.current?.id === doc.id) {
             setActive((previous) => previous ? { ...previous, favorite: !doc.favorite } : previous)
             activeRef.current = { ...activeRef.current, favorite: !doc.favorite }
@@ -3115,6 +3594,7 @@ window.__ModuleLoader__.load({
         if (event.key === 'Escape') {
           setMenu(null)
           setColorMenu(null)
+          setFolderMenu(null)
           setDialog(null)
           setFindOpen(false)
           setPaintMode(false)
@@ -3133,6 +3613,7 @@ window.__ModuleLoader__.load({
             const data = await api('/list')
             if (!alive) return
             setDocuments(data.documents)
+            setFolderList(data.folders)
             let remembered = null
             try {
               remembered = window.localStorage.getItem('dsh-docs:last')
@@ -3160,9 +3641,10 @@ window.__ModuleLoader__.load({
           try {
             const data = await api('/list')
             if (!alive) return
+            setFolderList(data.folders)
             setDocuments((previous) => {
               const next = data.documents.slice()
-              if (next.length === previous.length && next.every((entry, index) => entry.id === previous[index]?.id && entry.rev === previous[index]?.rev && entry.title === previous[index]?.title)) {
+              if (next.length === previous.length && next.every((entry, index) => entry.id === previous[index]?.id && entry.rev === previous[index]?.rev && entry.title === previous[index]?.title && entry.folderId === previous[index]?.folderId)) {
                 return previous
               }
               return next
@@ -3189,6 +3671,22 @@ window.__ModuleLoader__.load({
           window.clearInterval(timer)
         }
       }, [])
+
+      useEffect(() => {
+        if (!folderMenu) return
+        const close = (event) => {
+          const target = event.target
+          if (target instanceof Element && (target.closest('[data-folder-menu]') || target.closest('[data-folder-menu-button]'))) return
+          setFolderMenu(null)
+        }
+        document.addEventListener('mousedown', close)
+        return () => document.removeEventListener('mousedown', close)
+      }, [folderMenu])
+
+      useEffect(() => {
+        if (folderFilter === 'all' || folderFilter === 'unfiled') return
+        if (!folders.some((folder) => folder.id === folderFilter)) setFolderFilter('all')
+      }, [folders, folderFilter])
 
       useEffect(() => {
         const onSelectionChange = () => {
@@ -3832,6 +4330,17 @@ window.__ModuleLoader__.load({
                     'button',
                     {
                       type: 'button',
+                      className: 'dd-icon-btn dd-folder-new',
+                      title: t('newFolder'),
+                      'aria-label': t('newFolder'),
+                      onClick: () => openCreateFolder(null),
+                    },
+                    h(Icon, { name: 'folderPlus', size: 15 }),
+                  ),
+                  h(
+                    'button',
+                    {
+                      type: 'button',
                       className: 'dd-icon-btn dd-rail-new',
                       title: t('newDocument'),
                       'aria-label': t('newDocument'),
@@ -3859,9 +4368,9 @@ window.__ModuleLoader__.load({
                     'button',
                     {
                       type: 'button',
-                      className: `dd-chip${docFilter === 'all' ? ' dd-chip-active' : ''}`,
-                      'aria-pressed': docFilter === 'all' ? 'true' : 'false',
-                      onClick: () => setDocFilter('all'),
+                      className: `dd-chip${folderFilter === 'all' && docFilter === 'all' ? ' dd-chip-active' : ''}`,
+                      'aria-pressed': folderFilter === 'all' && docFilter === 'all' ? 'true' : 'false',
+                      onClick: () => chooseLibrary('all', 'all'),
                     },
                     h(Icon, { name: 'document', size: 12 }),
                     t('allDocuments'),
@@ -3872,11 +4381,67 @@ window.__ModuleLoader__.load({
                       type: 'button',
                       className: `dd-chip${docFilter === 'starred' ? ' dd-chip-active' : ''}`,
                       'aria-pressed': docFilter === 'starred' ? 'true' : 'false',
-                      onClick: () => setDocFilter('starred'),
+                      onClick: () => chooseLibrary('all', 'starred'),
                     },
                     h(Icon, { name: 'star', size: 12 }),
                     t('starred'),
                   ),
+                ),
+                h(
+                  'div',
+                  { className: 'dd-folders' },
+                  h(
+                    'div',
+                    { className: 'dd-folders-head' },
+                    h('span', { className: 'dd-folders-title' }, t('folders')),
+                    h(
+                      'button',
+                      {
+                        type: 'button',
+                        className: 'dd-icon-btn dd-folder-new',
+                        title: t('newFolder'),
+                        'aria-label': t('newFolder'),
+                        onClick: () => openCreateFolder(null),
+                      },
+                      h(Icon, { name: 'folderPlus', size: 14 }),
+                    ),
+                  ),
+                  h(
+                    'div',
+                    { className: 'dd-folder-tree' },
+                    folders.length === 0
+                      ? h('div', { className: 'dd-folder-empty' }, t('noFolders'))
+                      : renderFolderNodes(null, 0),
+                    h(
+                      'div',
+                      {
+                        className: `dd-folder-row dd-unfiled-row${folderFilter === 'unfiled' ? ' dd-folder-row-active' : ''}${folderDropTarget === 'unfiled' ? ' dd-folder-row-drop' : ''}`,
+                        role: 'button',
+                        tabIndex: 0,
+                        'aria-current': folderFilter === 'unfiled' ? 'true' : undefined,
+                        onClick: () => chooseLibrary('unfiled'),
+                        onKeyDown: (event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault()
+                            chooseLibrary('unfiled')
+                          }
+                        },
+                        onDragOver: (event) => isFolderDropTarget(event, 'unfiled'),
+                        onDragLeave: (event) => leaveFolderDrop(event, 'unfiled'),
+                        onDrop: (event) => dropDocumentOnFolder(event, null),
+                      },
+                      h('span', { className: 'dd-folder-caret-spacer' }),
+                      h(Icon, { name: 'folder', size: 13, className: 'dd-folder-icon' }),
+                      h('span', { className: 'dd-folder-name' }, t('unfiled')),
+                      h('span', { className: 'dd-folder-count' }, String(documents.filter((doc) => !doc.folderId).length || '')),
+                    ),
+                  ),
+                ),
+                h(
+                  'div',
+                  { className: 'dd-list-caption' },
+                  h('span', null, libraryLabel),
+                  h('span', null, String(filteredDocuments.length)),
                 ),
                 h(
                   'div',
@@ -3885,7 +4450,9 @@ window.__ModuleLoader__.load({
                     ? h(
                         'div',
                         { className: 'dd-outline-empty' },
-                        query.trim() !== '' ? t('noMatches') : t('noDocuments'),
+                        query.trim() !== ''
+                          ? t('noMatches')
+                          : folderFilter !== 'all' ? t('folderEmpty') : t('noDocuments'),
                       )
                     : filteredDocuments.map((doc) =>
                         h(
@@ -3895,7 +4462,10 @@ window.__ModuleLoader__.load({
                             className: `dd-doc-row${active?.id === doc.id ? ' dd-doc-row-active' : ''}`,
                             role: 'button',
                             tabIndex: 0,
+                            draggable: true,
                             'aria-current': active?.id === doc.id ? 'true' : undefined,
+                            onDragStart: (event) => startDocumentDrag(event, doc),
+                            onDragEnd: () => setFolderDropTarget(null),
                             onClick: () => void openDocument(doc.id),
                             onKeyDown: (event) => {
                               if (event.key === 'Enter' || event.key === ' ') {
@@ -3932,6 +4502,20 @@ window.__ModuleLoader__.load({
                                 },
                               },
                               h(Icon, { name: 'star', size: 12, style: doc.favorite ? { color: '#f9ab00' } : null }),
+                            ),
+                            h(
+                              'button',
+                              {
+                                type: 'button',
+                                className: 'dd-icon-btn',
+                                title: t('moveToFolder'),
+                                'aria-label': t('moveToFolder'),
+                                onClick: (event) => {
+                                  event.stopPropagation()
+                                  setDialog({ kind: 'move', doc })
+                                },
+                              },
+                              h(Icon, { name: 'folder', size: 12 }),
                             ),
                             h(
                               'button',
@@ -4357,6 +4941,62 @@ window.__ModuleLoader__.load({
               },
               h('p', { className: 'dd-about' }, t('aboutBody')),
             )
+          : null,
+        dialog?.kind === 'folderName'
+          ? h(FolderNameDialog, {
+              t,
+              mode: dialog.mode,
+              initialName: dialog.name,
+              onClose: () => setDialog(null),
+              onApply: (name) => {
+                if (dialog.mode === 'rename') void renameFolder(dialog.id, name)
+                else void createFolder(name, dialog.parentId)
+              },
+            })
+          : null,
+        dialog?.kind === 'folderDelete'
+          ? (() => {
+              const folder = dialog.folder
+              const descendants = folderDescendantIds(folder.id)
+              const documentCount = documents.filter((doc) => doc.folderId && (doc.folderId === folder.id || descendants.has(doc.folderId))).length
+              return h(
+                Modal,
+                {
+                  title: t('deleteFolder'),
+                  onClose: () => setDialog(null),
+                  width: 400,
+                  footer: [
+                    h('button', { key: 'cancel', type: 'button', className: 'dd-btn', onClick: () => setDialog(null) }, t('cancel')),
+                    h(
+                      'button',
+                      {
+                        key: 'delete',
+                        type: 'button',
+                        className: 'dd-btn dd-btn-danger',
+                        onClick: () => void deleteFolder(folder),
+                      },
+                      t('deleteFolder'),
+                    ),
+                  ],
+                },
+                h('p', { className: 'dd-about' }, `${t('deleteFolderConfirm')} “${folder.name}”`),
+                h('p', { className: 'dd-about', style: { marginTop: 8 } }, t('deleteFolderBody')),
+                h(
+                  'p',
+                  { className: 'dd-field-hint', style: { marginTop: 10 } },
+                  `${documentCount} ${t('documents').toLowerCase()} · ${descendants.size} ${t('folders').toLowerCase()}`,
+                ),
+              )
+            })()
+          : null,
+        dialog?.kind === 'move'
+          ? h(MoveToFolderDialog, {
+              t,
+              folders,
+              doc: dialog.doc,
+              onClose: () => setDialog(null),
+              onMove: (folderId) => void moveDocument(dialog.doc, folderId),
+            })
           : null,
         dialog?.kind === 'delete'
           ? h(
