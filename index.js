@@ -16,6 +16,9 @@ const MAX_HTML = 4 * 1024 * 1024
 const MAX_IMPORT = 8 * 1024 * 1024
 const MAX_BODY_BYTES = 24 * 1024 * 1024
 const MAX_ASSET_BYTES = 8 * 1024 * 1024
+const MAX_FOLDERS = 2000
+const MAX_FOLDER_NAME = 80
+const MAX_FOLDER_DEPTH = 8
 const PAPERS = new Set(['a4', 'letter', 'legal'])
 
 export const inject = ['tools', 'webServer']
@@ -40,6 +43,39 @@ function clamp(value, min, max, fallback) {
 function cleanTitle(value, fallback = 'Untitled document') {
   const raw = typeof value === 'string' ? value.trim().replace(/[\r\n\t]+/g, ' ') : ''
   return (raw || fallback).slice(0, MAX_TITLE)
+}
+
+function cleanFolderName(value, fallback = 'Untitled folder') {
+  const raw = typeof value === 'string'
+    ? value.trim().replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ')
+    : ''
+  return (raw || fallback).slice(0, MAX_FOLDER_NAME)
+}
+
+function normalizeFolderId(value) {
+  if (value === null || value === undefined || value === '') return null
+  const text = String(value).trim()
+  return /^folder_[0-9a-f-]{8,}$/i.test(text) ? text : null
+}
+
+function normalizeFolder(input, existing) {
+  const base = existing ?? {}
+  const source = input && typeof input === 'object' ? input : {}
+  const has = (key) => Object.prototype.hasOwnProperty.call(source, key)
+  const rawParent = has('parentId') ? source.parentId : base.parentId
+  const parentId = rawParent === null || rawParent === undefined || rawParent === ''
+    ? null
+    : normalizeFolderId(rawParent)
+  return {
+    id: base.id ?? normalizeFolderId(source.id) ?? newId('folder'),
+    name: cleanFolderName(has('name') ? source.name : base.name),
+    parentId,
+    order: Number.isFinite(Number(has('order') ? source.order : base.order))
+      ? Math.max(0, Math.floor(Number(has('order') ? source.order : base.order)))
+      : 0,
+    createdAt: base.createdAt ?? (typeof source.createdAt === 'string' ? source.createdAt : nowIso()),
+    updatedAt: nowIso(),
+  }
 }
 
 function escapeHtml(value) {
@@ -207,6 +243,7 @@ function normalizeDoc(input, existing) {
   return {
     id: base.id ?? newId('doc'),
     title: cleanTitle(has('title') ? source.title : base.title),
+    folderId: has('folderId') ? normalizeFolderId(source.folderId) : normalizeFolderId(base.folderId),
     html,
     text,
     page: normalizePage(pageInput),
@@ -225,6 +262,7 @@ function docSummary(doc) {
   return {
     id: doc.id,
     title: doc.title,
+    folderId: doc.folderId ?? null,
     favorite: doc.favorite,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
@@ -445,7 +483,9 @@ class DocumentStore {
     this.directory = directory
     this.docsDirectory = path.join(directory, 'documents')
     this.assetsDirectory = path.join(directory, 'assets')
+    this.foldersFile = path.join(directory, 'folders.json')
     this.docs = new Map()
+    this.folders = new Map()
     this.ready = this.load()
     this.queue = Promise.resolve()
   }
@@ -453,6 +493,18 @@ class DocumentStore {
   async load() {
     await fs.mkdir(this.docsDirectory, { recursive: true })
     await fs.mkdir(this.assetsDirectory, { recursive: true })
+    try {
+      const raw = JSON.parse(await fs.readFile(this.foldersFile, 'utf8'))
+      const folders = Array.isArray(raw) ? raw : Array.isArray(raw?.folders) ? raw.folders : []
+      for (const entry of folders) {
+        const folder = normalizeFolder(entry, null)
+        this.folders.set(folder.id, folder)
+      }
+    } catch (error) {
+      if (error?.code !== 'ENOENT') {
+        console.error(`[dsh-docs] ignoring unreadable folder index: ${error?.message ?? error}`)
+      }
+    }
     let entries = []
     try {
       entries = await fs.readdir(this.docsDirectory, { withFileTypes: true })
@@ -468,9 +520,26 @@ class DocumentStore {
         doc.rev = Number(parsed.rev ?? 1)
         doc.updatedAt = typeof parsed.updatedAt === 'string' ? parsed.updatedAt : nowIso()
         doc.createdAt = typeof parsed.createdAt === 'string' ? parsed.createdAt : doc.updatedAt
+        if (doc.folderId && !this.folders.has(doc.folderId)) doc.folderId = null
         this.docs.set(doc.id, doc)
       } catch (error) {
         console.error(`[dsh-docs] ignoring unreadable document ${file}: ${error?.message ?? error}`)
+      }
+    }
+    for (const folder of this.folders.values()) {
+      if (folder.parentId && !this.folders.has(folder.parentId)) folder.parentId = null
+    }
+    for (const folder of this.folders.values()) {
+      const seen = new Set([folder.id])
+      let cursor = folder
+      while (cursor.parentId) {
+        if (seen.has(cursor.parentId)) {
+          cursor.parentId = null
+          break
+        }
+        seen.add(cursor.parentId)
+        cursor = this.folders.get(cursor.parentId)
+        if (!cursor) break
       }
     }
   }
@@ -492,6 +561,194 @@ class DocumentStore {
 
   async list() {
     return (await this.all()).map(docSummary)
+  }
+
+  async allFolders() {
+    await this.ensureReady()
+    return [...this.folders.values()].sort((a, b) => {
+      if (a.order !== b.order) return a.order - b.order
+      return a.name.localeCompare(b.name)
+    })
+  }
+
+  async listFolders() {
+    await this.ensureReady()
+    const counts = new Map()
+    for (const doc of this.docs.values()) {
+      if (doc.folderId) counts.set(doc.folderId, (counts.get(doc.folderId) ?? 0) + 1)
+    }
+    return (await this.allFolders()).map((folder) => ({
+      ...clone(folder),
+      documentCount: counts.get(folder.id) ?? 0,
+    }))
+  }
+
+  async resolveFolder(reference) {
+    const raw = String(reference ?? '').trim()
+    if (raw === '') return null
+    await this.ensureReady()
+    const byId = this.folders.get(raw)
+    if (byId) return byId
+    const lowered = raw.toLowerCase()
+    const folders = await this.allFolders()
+    return (
+      folders.find((folder) => folder.name.toLowerCase() === lowered) ??
+      folders.find((folder) => folder.name.toLowerCase().includes(lowered)) ??
+      null
+    )
+  }
+
+  folderDepth(folderId) {
+    let depth = 0
+    let cursor = folderId ? this.folders.get(folderId) : null
+    const seen = new Set()
+    while (cursor?.parentId) {
+      if (seen.has(cursor.parentId)) break
+      seen.add(cursor.parentId)
+      depth += 1
+      cursor = this.folders.get(cursor.parentId)
+    }
+    return depth
+  }
+
+  descendantFolderIds(folderId) {
+    const result = new Set()
+    const queue = [folderId]
+    while (queue.length > 0) {
+      const current = queue.shift()
+      for (const folder of this.folders.values()) {
+        if (folder.parentId === current && !result.has(folder.id)) {
+          result.add(folder.id)
+          queue.push(folder.id)
+        }
+      }
+    }
+    return result
+  }
+
+  async persistFolders() {
+    const target = this.foldersFile
+    const temp = `${target}.${process.pid}.${Date.now()}.tmp`
+    const folders = [...this.folders.values()].sort((a, b) => a.order - b.order)
+    await fs.writeFile(temp, JSON.stringify({ folders }, null, 2), 'utf8')
+    await fs.rename(temp, target)
+  }
+
+  async createFolder(input) {
+    return this.serial(async () => {
+      await this.ensureReady()
+      if (this.folders.size >= MAX_FOLDERS) {
+        const error = new Error(`The folder store is limited to ${MAX_FOLDERS} folders`)
+        error.statusCode = 409
+        throw error
+      }
+      const source = input && typeof input === 'object' ? input : {}
+      const parentId = source.parentId === null || source.parentId === undefined || source.parentId === ''
+        ? null
+        : normalizeFolderId(source.parentId)
+      if (source.parentId && !parentId) {
+        const error = new Error('Parent folder is invalid')
+        error.statusCode = 400
+        throw error
+      }
+      if (parentId && !this.folders.has(parentId)) {
+        const error = new Error('Parent folder was not found')
+        error.statusCode = 404
+        throw error
+      }
+      if (parentId && this.folderDepth(parentId) + 1 >= MAX_FOLDER_DEPTH) {
+        const error = new Error(`Folders can be nested at most ${MAX_FOLDER_DEPTH} levels`)
+        error.statusCode = 400
+        throw error
+      }
+      const siblings = [...this.folders.values()].filter((folder) => folder.parentId === parentId)
+      const order = siblings.reduce((max, folder) => Math.max(max, folder.order), -1) + 1
+      const folder = normalizeFolder({ ...source, parentId, order }, null)
+      this.folders.set(folder.id, folder)
+      await this.persistFolders()
+      return clone(folder)
+    })
+  }
+
+  async renameFolder(id, name) {
+    return this.serial(async () => {
+      await this.ensureReady()
+      const folder = this.folders.get(String(id ?? ''))
+      if (!folder) {
+        const error = new Error('Folder not found')
+        error.statusCode = 404
+        throw error
+      }
+      folder.name = cleanFolderName(name)
+      folder.updatedAt = nowIso()
+      await this.persistFolders()
+      return clone(folder)
+    })
+  }
+
+  async moveFolder(id, parentIdInput) {
+    return this.serial(async () => {
+      await this.ensureReady()
+      const folder = this.folders.get(String(id ?? ''))
+      if (!folder) {
+        const error = new Error('Folder not found')
+        error.statusCode = 404
+        throw error
+      }
+      const parentId = parentIdInput === null || parentIdInput === undefined || parentIdInput === ''
+        ? null
+        : normalizeFolderId(parentIdInput)
+      if (parentIdInput && !parentId) {
+        const error = new Error('Parent folder is invalid')
+        error.statusCode = 400
+        throw error
+      }
+      if (parentId === folder.id || (parentId && this.descendantFolderIds(folder.id).has(parentId))) {
+        const error = new Error('A folder cannot be moved inside itself')
+        error.statusCode = 400
+        throw error
+      }
+      if (parentId && !this.folders.has(parentId)) {
+        const error = new Error('Parent folder was not found')
+        error.statusCode = 404
+        throw error
+      }
+      if (parentId && this.folderDepth(parentId) + 1 >= MAX_FOLDER_DEPTH) {
+        const error = new Error(`Folders can be nested at most ${MAX_FOLDER_DEPTH} levels`)
+        error.statusCode = 400
+        throw error
+      }
+      folder.parentId = parentId
+      folder.updatedAt = nowIso()
+      await this.persistFolders()
+      return clone(folder)
+    })
+  }
+
+  async deleteFolder(id) {
+    return this.serial(async () => {
+      await this.ensureReady()
+      const folder = this.folders.get(String(id ?? ''))
+      if (!folder) {
+        const error = new Error('Folder not found')
+        error.statusCode = 404
+        throw error
+      }
+      const removed = this.descendantFolderIds(folder.id)
+      removed.add(folder.id)
+      let movedDocuments = 0
+      for (const doc of this.docs.values()) {
+        if (!doc.folderId || !removed.has(doc.folderId)) continue
+        doc.folderId = null
+        doc.updatedAt = nowIso()
+        doc.rev = Number(doc.rev ?? 0) + 1
+        await this.persist(doc)
+        movedDocuments += 1
+      }
+      for (const folderId of removed) this.folders.delete(folderId)
+      await this.persistFolders()
+      return { removedFolders: [...removed], movedDocuments }
+    })
   }
 
   async get(id) {
@@ -542,6 +799,7 @@ class DocumentStore {
           : '<p><br></p>'
       }
       const doc = normalizeDoc({ ...source, html }, null)
+      if (doc.folderId && !this.folders.has(doc.folderId)) doc.folderId = null
       doc.rev = 1
       await this.persist(doc)
       this.docs.set(doc.id, doc)
@@ -562,6 +820,7 @@ class DocumentStore {
       const next = normalizeDoc(source, current)
       next.id = current.id
       next.createdAt = current.createdAt
+      if (next.folderId && !this.folders.has(next.folderId)) next.folderId = null
       await this.persist(next)
       this.docs.set(next.id, next)
       return clone(next)
@@ -589,6 +848,7 @@ class DocumentStore {
       showHeader: source.showHeader,
       showFooter: source.showFooter,
       favorite: false,
+      folderId: source.folderId ?? null,
     })
   }
 
@@ -676,7 +936,15 @@ function registerRoutes(ctx, store) {
       : ''
     try {
       if (req.method === 'GET' && name === 'list') {
-        writeJson(res, 200, { ok: true, documents: await store.list() })
+        writeJson(res, 200, {
+          ok: true,
+          documents: await store.list(),
+          folders: await store.listFolders(),
+        })
+        return
+      }
+      if (req.method === 'GET' && name === 'folders') {
+        writeJson(res, 200, { ok: true, folders: await store.listFolders() })
         return
       }
       if (req.method === 'GET' && name === 'get') {
@@ -711,31 +979,96 @@ function registerRoutes(ctx, store) {
       if (req.method === 'POST' && name === 'create') {
         const payload = await readJsonBody(req)
         const doc = await store.create(payload)
-        writeJson(res, 200, { ok: true, document: doc, summary: docSummary(doc) })
+        writeJson(res, 200, {
+          ok: true,
+          document: doc,
+          summary: docSummary(doc),
+          folders: await store.listFolders(),
+        })
         return
       }
       if (req.method === 'POST' && name === 'save') {
         const payload = await readJsonBody(req)
         const doc = await store.save(payload.id, payload.document ?? payload)
-        writeJson(res, 200, { ok: true, document: doc, summary: docSummary(doc) })
+        writeJson(res, 200, {
+          ok: true,
+          document: doc,
+          summary: docSummary(doc),
+          folders: await store.listFolders(),
+        })
         return
       }
       if (req.method === 'POST' && name === 'rename') {
         const payload = await readJsonBody(req)
         const doc = await store.rename(payload.id, payload.title)
-        writeJson(res, 200, { ok: true, document: doc, summary: docSummary(doc) })
+        writeJson(res, 200, {
+          ok: true,
+          document: doc,
+          summary: docSummary(doc),
+          folders: await store.listFolders(),
+        })
         return
       }
       if (req.method === 'POST' && name === 'duplicate') {
         const payload = await readJsonBody(req)
         const doc = await store.duplicate(payload.id)
-        writeJson(res, 200, { ok: true, document: doc, summary: docSummary(doc) })
+        writeJson(res, 200, {
+          ok: true,
+          document: doc,
+          summary: docSummary(doc),
+          folders: await store.listFolders(),
+        })
         return
       }
       if (req.method === 'POST' && name === 'delete') {
         const payload = await readJsonBody(req)
         await store.delete(payload.id)
-        writeJson(res, 200, { ok: true })
+        writeJson(res, 200, {
+          ok: true,
+          documents: await store.list(),
+          folders: await store.listFolders(),
+        })
+        return
+      }
+      if (req.method === 'POST' && name === 'folder/create') {
+        const payload = await readJsonBody(req)
+        const folder = await store.createFolder(payload)
+        writeJson(res, 200, {
+          ok: true,
+          folder,
+          folders: await store.listFolders(),
+        })
+        return
+      }
+      if (req.method === 'POST' && name === 'folder/rename') {
+        const payload = await readJsonBody(req)
+        const folder = await store.renameFolder(payload.id, payload.name)
+        writeJson(res, 200, {
+          ok: true,
+          folder,
+          folders: await store.listFolders(),
+        })
+        return
+      }
+      if (req.method === 'POST' && name === 'folder/move') {
+        const payload = await readJsonBody(req)
+        const folder = await store.moveFolder(payload.id, payload.parentId)
+        writeJson(res, 200, {
+          ok: true,
+          folder,
+          folders: await store.listFolders(),
+        })
+        return
+      }
+      if (req.method === 'POST' && name === 'folder/delete') {
+        const payload = await readJsonBody(req)
+        const result = await store.deleteFolder(payload.id)
+        writeJson(res, 200, {
+          ok: true,
+          ...result,
+          documents: await store.list(),
+          folders: await store.listFolders(),
+        })
         return
       }
       if (req.method === 'POST' && name === 'asset') {
@@ -770,6 +1103,17 @@ function callView(title, kind = 'other') {
 }
 
 function makeTools(store) {
+  const resolveFolderArg = async (reference) => {
+    if (reference === undefined || reference === null || String(reference).trim() === '') return null
+    const folder = await store.resolveFolder(reference)
+    if (!folder) {
+      const error = new Error(`Folder "${reference}" was not found. Use docs_folders action=list to see folders.`)
+      error.statusCode = 404
+      throw error
+    }
+    return folder
+  }
+
   const listTool = {
     name: 'docs_list',
     description:
@@ -782,14 +1126,16 @@ function makeTools(store) {
     isConcurrencySafe: () => true,
     presentCall: () => callView('List documents', 'read'),
     async execute() {
-      const docs = await store.list()
+      const [docs, folders] = await Promise.all([store.list(), store.listFolders()])
+      const folderNames = new Map(folders.map((folder) => [folder.id, folder.name]))
       const lines = docs.length === 0
         ? ['No documents exist yet.']
         : [`${docs.length} document${docs.length === 1 ? '' : 's'}:`]
       for (const doc of docs) {
-        lines.push(`- ${doc.title} — id ${doc.id}; ${doc.words} words; updated ${doc.updatedAt}`)
+        const folder = doc.folderId ? folderNames.get(doc.folderId) : null
+        lines.push(`- ${doc.title} — id ${doc.id}; ${folder ? `folder ${folder}` : 'unfiled'}; ${doc.words} words; updated ${doc.updatedAt}`)
       }
-      return { text: lines.join('\n'), documents: docs }
+      return { text: lines.join('\n'), documents: docs, folders }
     },
   }
 
@@ -845,6 +1191,7 @@ function makeTools(store) {
       type: 'object',
       properties: {
         title: { type: 'string', description: 'Document title.' },
+        folder: { type: 'string', description: 'Optional folder id or folder name. Omit to leave the document unfiled.' },
         content: { type: 'string', description: 'Document body. Markdown by default, HTML when format is html.' },
         format: {
           type: 'string',
@@ -883,8 +1230,10 @@ function makeTools(store) {
     },
     presentCall: (args) => callView(`Create document ${typeof args?.title === 'string' ? `“${args.title}”` : ''}`, 'edit'),
     async execute(args) {
+      const folder = await resolveFolderArg(args?.folder)
       const doc = await store.create({
         title: cleanTitle(args?.title),
+        folderId: folder?.id ?? null,
         content: args?.content,
         format: args?.format,
         page: args?.page,
@@ -894,7 +1243,7 @@ function makeTools(store) {
         showFooter: typeof args?.footer === 'string' && args.footer.trim() !== '',
       })
       return {
-        text: `Created document "${doc.title}" (${doc.id}) with ${wordCount(doc.text)} words. Open the Docs panel in the sidebar to edit or export it.`,
+        text: `Created document "${doc.title}" (${doc.id}) with ${wordCount(doc.text)} words${folder ? ` in folder "${folder.name}"` : ''}. Open the Docs panel in the sidebar to edit or export it.`,
         document: docSummary(doc),
       }
     },
@@ -909,6 +1258,7 @@ function makeTools(store) {
       properties: {
         document: { type: 'string', description: 'Document id or title. Omit to use the most recently updated document.' },
         title: { type: 'string', description: 'Optional new title.' },
+        folder: { type: 'string', description: 'Optional folder id or name. Pass an empty string to move the document to Unfiled.' },
         content: { type: 'string', description: 'Content to write. Markdown by default, HTML when format is html.' },
         format: {
           type: 'string',
@@ -954,6 +1304,13 @@ function makeTools(store) {
       const current = await store.resolve(args?.document)
       const patch = {}
       if (typeof args?.title === 'string' && args.title.trim() !== '') patch.title = args.title
+      if (args?.folder !== undefined) {
+        if (args.folder === null || String(args.folder).trim() === '') patch.folderId = null
+        else {
+          const folder = await resolveFolderArg(args.folder)
+          patch.folderId = folder?.id ?? null
+        }
+      }
       if (args?.page !== undefined) patch.page = args.page
       if (typeof args?.header === 'string') {
         patch.header = args.header
@@ -1013,6 +1370,7 @@ function makeTools(store) {
       properties: {
         path: { type: 'string', description: 'Absolute file path, or a path starting with ~/.' },
         title: { type: 'string', description: 'Optional document title. Defaults to the file name.' },
+        folder: { type: 'string', description: 'Optional folder id or folder name.' },
       },
       required: ['path'],
       additionalProperties: false,
@@ -1035,8 +1393,10 @@ function makeTools(store) {
       if (stat.size > MAX_IMPORT) throw new Error('The import file is larger than 8 MB')
       const contents = await fs.readFile(file, 'utf8')
       const format = ext === '.html' || ext === '.htm' ? 'html' : ext === '.txt' ? 'text' : 'markdown'
+      const folder = await resolveFolderArg(args?.folder)
       const doc = await store.create({
         title: cleanTitle(args?.title, path.basename(file, ext)),
+        folderId: folder?.id ?? null,
         content: contents,
         format,
       })
@@ -1047,7 +1407,79 @@ function makeTools(store) {
     },
   }
 
-  return [listTool, readTool, createTool, updateTool, importTool, deleteTool]
+  const foldersTool = {
+    name: 'docs_folders',
+    description:
+      'List, create, rename, or delete folders in the Harness Docs panel. Deleting a folder moves its documents to Unfiled; it never deletes a document. Use folder ids or names in docs_create and docs_update when filing documents.',
+    parameters: {
+      type: 'object',
+      properties: {
+        action: { type: 'string', enum: ['list', 'create', 'rename', 'delete'] },
+        id: { type: 'string', description: 'Folder id or name for rename and delete.' },
+        name: { type: 'string', description: 'Folder name for create or rename.' },
+        parent: { type: 'string', description: 'Optional parent folder id or name for create.' },
+      },
+      required: ['action'],
+      additionalProperties: false,
+    },
+    output: {
+      schema: { type: 'object', additionalProperties: true },
+      render: (_args, value) => toolText(value),
+    },
+    isConcurrencySafe: () => false,
+    presentCall: (args) => callView(`Folder ${typeof args?.action === 'string' ? args.action : 'operation'}`, 'edit'),
+    async execute(args) {
+      const action = args?.action
+      if (action === 'list') {
+        const folders = await store.listFolders()
+        const lines = folders.length === 0
+          ? ['No folders exist yet.']
+          : [`${folders.length} folder${folders.length === 1 ? '' : 's'}:`]
+        for (const folder of folders) {
+          lines.push(`- ${folder.name} — id ${folder.id}; ${folder.documentCount} document${folder.documentCount === 1 ? '' : 's'}${folder.parentId ? `; parent ${folder.parentId}` : ''}`)
+        }
+        return { text: lines.join('\n'), folders }
+      }
+      if (action === 'create') {
+        if (typeof args?.name !== 'string' || args.name.trim() === '') throw new Error('docs_folders create needs a folder name')
+        const parent = await resolveFolderArg(args?.parent)
+        const folder = await store.createFolder({ name: args.name, parentId: parent?.id ?? null })
+        return {
+          text: `Created folder "${folder.name}" (${folder.id})${parent ? ` inside "${parent.name}"` : ''}.`,
+          folder,
+          folders: await store.listFolders(),
+        }
+      }
+      if (action === 'rename') {
+        const target = args?.id ?? args?.name
+        if (typeof target !== 'string' || target.trim() === '') throw new Error('docs_folders rename needs a folder id or name')
+        const folder = await resolveFolderArg(target)
+        if (!folder) throw new Error(`Folder "${target}" was not found`)
+        if (typeof args?.name !== 'string' || args.name.trim() === '') throw new Error('docs_folders rename needs a new name')
+        const updated = await store.renameFolder(folder.id, args.name)
+        return {
+          text: `Renamed folder to "${updated.name}" (${updated.id}).`,
+          folder: updated,
+          folders: await store.listFolders(),
+        }
+      }
+      if (action === 'delete') {
+        const target = args?.id ?? args?.name
+        if (typeof target !== 'string' || target.trim() === '') throw new Error('docs_folders delete needs a folder id or name')
+        const folder = await resolveFolderArg(target)
+        if (!folder) throw new Error(`Folder "${target}" was not found`)
+        const result = await store.deleteFolder(folder.id)
+        return {
+          text: `Deleted folder "${folder.name}" and ${result.removedFolders.length - 1} subfolder(s); moved ${result.movedDocuments} document(s) to Unfiled.`,
+          ...result,
+          folders: await store.listFolders(),
+        }
+      }
+      throw new Error('Unknown docs_folders action')
+    },
+  }
+
+  return [listTool, readTool, createTool, updateTool, importTool, foldersTool, deleteTool]
 }
 
 function registerTools(ctx, store) {
@@ -1068,6 +1500,7 @@ function registerPrompt(ctx) {
             'A Docs panel is available in the Harness sidebar. When the user asks for a document, letter, memo, brief, plan, report, or any long-form editable text, create it with the docs tools instead of only printing it in chat. The panel and the agent share one durable store.',
             'Use docs_update page and header/footer parameters when the user asks for landscape, A4/Letter/Legal, different margins, or running headers and footers.',
             'Call docs_list before editing a document the user refers to by title. Use docs_read before a substantial rewrite so existing content is preserved. Prefer docs_update with mode replace only when the user wants a rewrite; append when adding a section.',
+            'Use docs_folders to list, create, rename, or delete folders. Use the folder parameter on docs_create and docs_update to file a document. Deleting a folder moves its documents to Unfiled, never deletes them.',
             'Content defaults to Markdown. Pass format "html" when exact styling matters. Supported HTML includes headings h1–h6, p, strong, em, u, s, sup, sub, ul/ol/li, blockquote, pre/code, a, img, hr, and tables (table/thead/tbody/tr/th/td). Inline style attributes survive for color, highlight, font-family, font-size, line-height, margins, text-align, and page breaks. Do not use script, iframe, forms, or event handler attributes.',
             'After writing, state the document title so the user can open the Docs panel, keep editing, print it, or export it as HTML, Markdown, or plain text.',
           ].join('\n\n'),
@@ -1083,3 +1516,6 @@ export function apply(ctx) {
   registerTools(ctx, store)
   registerPrompt(ctx)
 }
+
+
+export { DocumentStore, makeTools }

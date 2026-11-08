@@ -25,13 +25,14 @@ In an installed Harness build, the same package can be installed from the Plugin
 ## Features
 
 - Full-panel document list and editor, opened from the sidebar.
+- Folder tree with nested folders, rename/delete, drag-and-drop filing, and an Unfiled view. Deleting a folder moves its documents to Unfiled instead of deleting them.
 - Rich text toolbar: styles, fonts, sizes, bold/italic/underline/strike, super/subscript, text and highlight colours, alignment, line and paragraph spacing, indents, bulleted/numbered/checklist lists, paint format, capitalization.
 - Insert links, images (URL or upload), tables with contextual row/column tools, horizontal lines, page breaks, headers and footers, special characters.
 - Page setup: A4/Letter/Legal, portrait/landscape, four margins, page colour, ruler, zoom, document outline, live word/page count.
 - Undo/redo, keyboard shortcuts, find and replace, autosave.
 - Export to standalone HTML, Word-compatible `.doc`, Markdown, or plain text; print to PDF.
 - Durable per-document JSON store under the profile data directory, plus uploaded-image assets.
-- Agent tools: `docs_list`, `docs_read`, `docs_create`, `docs_update`, `docs_import`, `docs_delete`.
+- Agent tools: `docs_list`, `docs_read`, `docs_create`, `docs_update`, `docs_import`, `docs_folders`, `docs_delete`.
 
 The agent and the panel share the same store. Agent edits are picked up by the open panel between saves.
 
@@ -42,8 +43,9 @@ The agent and the panel share the same store. Agent edits are picked up by the o
 | `docs_list` | List documents with titles, word counts, and timestamps. |
 | `docs_read` | Read a document as plain text, optionally with stored HTML. |
 | `docs_create` | Create a Markdown, HTML, or plain-text document. |
-| `docs_update` | Replace, append, or prepend content; update title, page setup, header, and footer. |
-| `docs_import` | Import a local `.html`, `.md`, `.markdown`, or `.txt` file. |
+| `docs_update` | Replace, append, or prepend content; update title, folder, page setup, header, and footer. |
+| `docs_import` | Import a local `.html`, `.md`, `.markdown`, or `.txt` file, optionally into a folder. |
+| `docs_folders` | List, create, rename, and delete folders. Deleting a folder never deletes its documents. |
 | `docs_delete` | Delete a document by id or title. |
 
 ## Data

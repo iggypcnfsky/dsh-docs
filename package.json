@@ -1,6 +1,6 @@
 {
   "name": "@iggylove/dsh-docs",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "Google Docs\u2013style word processor for DeepSeek Harness: rich text, page setup, tables, images, print, export, and agent editing.",
   "author": {
